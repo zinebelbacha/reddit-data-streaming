@@ -13,7 +13,7 @@ This project is designed to stream data from the Reddit API (posts from the subr
 ### Setup & Deployment:
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/zinebelbacha/reddit-posts-streaming.git
+   git clone https://github.com/zinebelbacha/reddit-data-streaming.git
    cd reddit-posts-streaming
 
 2. **Install the dependencies**:
@@ -40,4 +40,4 @@ This project is designed to stream data from the Reddit API (posts from the subr
 3. **Start Airflow service:**
    ```bash
    docker compose -f docker-compose-airflow.yaml up
-"# Reddit-Data-Streaming" 
+"# reddit-data-streaming" 

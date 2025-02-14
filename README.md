@@ -40,4 +40,3 @@ This project is designed to stream data from the Reddit API (posts from the subr
 3. **Start Airflow service:**
    ```bash
    docker compose -f docker-compose-airflow.yaml up
-"# reddit-data-streaming" 

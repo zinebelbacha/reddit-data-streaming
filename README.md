@@ -1,4 +1,4 @@
-# Reddit Data Streaming
+# Reddit Data Streaming Pipeline
 
 
 This project is designed to stream data from the Reddit API (posts from the subreddit: r/TodayILearned) using Apache Kafka, consume and transform it using Apache Spark, and store the results in a PostgreSQL database. The entire workflow is containerized using Docker and orchestrated with Apache Airflow.

@@ -93,12 +93,6 @@ def create_final_dataframe(df):
         .select(from_json(col("value"), schema).alias("data"))
         .select("data.*")
     )
-
-    # Add local timezone timestamp column
-    # df_out = df_out.withColumn(
-    #     "created_local",
-    #     from_utc_timestamp(col("created_utc"), "Africa/Casablanca")  # change timezone as needed
-    # )
     return df_out
 
 

@@ -85,7 +85,7 @@ def fetch_reddit_posts(reddit_client, subreddit_name, limit=10, last_processed_t
         source_url = extract_source_url(submission.selftext) or submission.url
         post_data = {
             "id": submission.id,
-            "title": submission.title,
+            "text": submission.title,
             "author": str(submission.author),
             "subreddit": submission.subreddit.display_name,
             "upvotes": submission.score,
@@ -95,7 +95,6 @@ def fetch_reddit_posts(reddit_client, subreddit_name, limit=10, last_processed_t
             #"date": datetime.fromtimestamp(submission.created_utc, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z'),
             "url": f"https://www.reddit.com{submission.permalink}",
             "source_url": source_url
-            #"text": submission.selftext
         }
         posts.append(post_data)
     return posts

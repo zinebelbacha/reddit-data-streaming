@@ -30,7 +30,7 @@ cursor = conn.cursor()
 create_table_query = """
 CREATE TABLE IF NOT EXISTS reddit_posts (
     id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
+    text TEXT NOT NULL,
     author TEXT,
     subreddit TEXT,
     upvotes INT,
@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS reddit_posts (
     num_comments INT,
     created_utc TIMESTAMP,
     url TEXT,
-    source_url TEXT,
-    text TEXT
+    source_url TEXT
 );
 """
 

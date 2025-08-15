@@ -4,9 +4,18 @@ import praw
 import re
 import os
 from dotenv import load_dotenv
+from pathlib import Path
+from configs.config import KAFKA_BOOTSTRAP_SERVERS, KAFKA_TOPIC, SUBREDDIT_NAME, FETCH_LIMIT, PATH_LAST_PROCESSED
+import logging
 
-
-load_dotenv(dotenv_path=r'C:\Users\hp\Downloads\DE-pipeline-project\.env')
+load_dotenv()
+LOG_FILE = Path(__file__).resolve().parent / "kafka_streaming.log"
+logging.basicConfig(
+    filename=str(LOG_FILE),
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 
 def initialize_reddit_client(client_id, client_secret, user_agent):
@@ -20,6 +29,30 @@ def initialize_reddit_client(client_id, client_secret, user_agent):
     )
     return reddit
 
+        
+def update_last_processed_file(posts):
+    """
+    Updates last_processed.json with the most recent post's timestamp.
+    """
+    if not posts:
+        return
+    latest_timestamp = max(post["created_utc"] for post in posts)
+    with open(PATH_LAST_PROCESSED, "w") as file:
+        json.dump({"last_processed": latest_timestamp}, file)
+
+
+def get_latest_timestamp():
+    """
+    Gets the latest processed UTC timestamp from file, or 0 if none exists.
+    """
+    if not os.path.exists(PATH_LAST_PROCESSED):
+        return 0
+    with open(PATH_LAST_PROCESSED, "r") as file:
+        data = json.load(file)
+        return data.get("last_processed", 0)
+
+
+        
 
 def initialize_kafka_producer(bootstrap_servers):
     """
@@ -41,12 +74,14 @@ def extract_source_url(text):
     return None
 
 
-def fetch_reddit_posts(reddit_client, subreddit_name, limit=10):
+def fetch_reddit_posts(reddit_client, subreddit_name, limit=10, last_processed_ts=0):
     """
-    Fetch posts from a subreddit and return them as a list of dictionaries.
+    Fetch posts newer than last_processed_ts from a subreddit.
     """
     posts = []
     for submission in reddit_client.subreddit(subreddit_name).hot(limit=limit):
+        if submission.created_utc <= last_processed_ts:
+            continue  # Skip old posts
         source_url = extract_source_url(submission.selftext) or submission.url
         post_data = {
             "id": submission.id,
@@ -54,15 +89,17 @@ def fetch_reddit_posts(reddit_client, subreddit_name, limit=10):
             "author": str(submission.author),
             "subreddit": submission.subreddit.display_name,
             "upvotes": submission.score,
-            "downvotes": 0,  # Reddit API doesn't provide downvotes directly
+            "downvotes": 0,
             "num_comments": submission.num_comments,
             "created_utc": submission.created_utc,
-            "url": submission.url,
-            "source_url": source_url,
-            "text": submission.selftext
+            #"date": datetime.fromtimestamp(submission.created_utc, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z'),
+            "url": f"https://www.reddit.com{submission.permalink}",
+            "source_url": source_url
+            #"text": submission.selftext
         }
         posts.append(post_data)
     return posts
+
 
 
 def send_to_kafka(producer, topic, data):
@@ -78,21 +115,18 @@ def stream():
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
     USER_AGENT = os.getenv("USER_AGENT")
 
-    KAFKA_BOOTSTRAP_SERVERS = 'localhost:9094'
-    KAFKA_TOPIC = 'reddit_posts'
-
-    SUBREDDIT_NAME = "TodayILearned"
-    FETCH_LIMIT = 1000
-
+    last_processed_ts = get_latest_timestamp()
     reddit_client = initialize_reddit_client(CLIENT_ID, CLIENT_SECRET, USER_AGENT)
-
     kafka_producer = initialize_kafka_producer(KAFKA_BOOTSTRAP_SERVERS)
 
-    posts = fetch_reddit_posts(reddit_client, SUBREDDIT_NAME, FETCH_LIMIT)
+    posts = fetch_reddit_posts(reddit_client, SUBREDDIT_NAME, FETCH_LIMIT, last_processed_ts)
+    if posts:
+        send_to_kafka(kafka_producer, KAFKA_TOPIC, posts)
+        update_last_processed_file(posts)
+        logging.info(f"Sent {len(posts)} new posts to Kafka topic '{KAFKA_TOPIC}'.")
+    else:
+        logging.info("No new posts found.")
 
-    send_to_kafka(kafka_producer, KAFKA_TOPIC, posts)
-
-    print(f"Sent {len(posts)} posts to Kafka topic '{KAFKA_TOPIC}'.")
 
 if __name__ == "__main__":
     stream()

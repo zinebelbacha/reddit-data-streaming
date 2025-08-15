@@ -1,19 +1,27 @@
 import psycopg2
 import os
 from dotenv import load_dotenv
+from configs.db_config import DB_NAME, DB_USER, DB_HOST,PORT
+from pathlib import Path
+import logging
 
 load_dotenv()
+LOG_FILE = Path(__file__).resolve().parent / "table.log"
+logging.basicConfig(
+    filename=str(LOG_FILE),
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
-DB_NAME = "postgres"
-DB_USER = "postgres"
 PG_PASSWORD = os.getenv("PG_PASSWORD")
-DB_HOST = "localhost"
 
 conn = psycopg2.connect(
     dbname=DB_NAME,
     user=DB_USER,
     password=PG_PASSWORD,
     host=DB_HOST,
+    port=PORT,
 )
 conn.autocommit = True
 
@@ -36,8 +44,7 @@ CREATE TABLE IF NOT EXISTS reddit_posts (
 """
 
 cursor.execute(create_table_query)
-
-print("Table 'reddit_posts' created successfully!")
+logging.info("Table 'reddit_posts' created successfully!")
 
 cursor.close()
 conn.close()

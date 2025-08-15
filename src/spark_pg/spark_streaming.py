@@ -6,25 +6,33 @@ from pyspark.sql.types import (
     IntegerType,
     TimestampType
 )
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, col, from_utc_timestamp
 import logging
-import psycopg2
-from psycopg2 import sql
-import os
+import os, sys
 from dotenv import load_dotenv
+from configs.config import LOG_FILE
+from configs.db_config import URL, POSTGRES_PROPERTIES
+import logging
 
 load_dotenv()
-
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s:%(funcName)s:%(levelname)s:%(message)s"
+    filename=str(LOG_FILE),
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
+url = URL
+properties = POSTGRES_PROPERTIES
+required_env_vars = ["PG_PASSWORD"]
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 
-url = "jdbc:postgresql://postgres:5432/postgres"
-properties = {
-    "user": "postgres",
-    "password": os.getenv("PG_PASSWORD"),
-    "driver": "org.postgresql.Driver"
-}
+if missing_vars:
+    print(f"ERROR: Missing required environment variables: {', '.join(missing_vars)}", file=sys.stderr)
+    sys.exit(1)
+
+
+
+# Check required environment variables
 
 def create_spark_session() -> SparkSession:
     spark = (
@@ -85,6 +93,12 @@ def create_final_dataframe(df):
         .select(from_json(col("value"), schema).alias("data"))
         .select("data.*")
     )
+
+    # Add local timezone timestamp column
+    # df_out = df_out.withColumn(
+    #     "created_local",
+    #     from_utc_timestamp(col("created_utc"), "Africa/Casablanca")  # change timezone as needed
+    # )
     return df_out
 
 

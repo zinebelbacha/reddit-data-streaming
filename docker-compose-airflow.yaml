@@ -4,6 +4,8 @@ x-airflow-common:
     context: .
     dockerfile: ./airflow/Dockerfile
   image: zineb-de-project/airflow:latest
+  env_file:
+    - .env
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -17,8 +19,9 @@ x-airflow-common:
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data
     - ./src:/opt/airflow/dags/src
+    - ./configs:/opt/airflow/dags/configs
   user: "50000:0"
   networks:
     - airflow-kafka
@@ -31,13 +34,13 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${PG_PASSWORD}
-      POSTGRES_DB: postgres
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
       retries: 5
       start_period: 5s

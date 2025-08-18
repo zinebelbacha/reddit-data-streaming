@@ -9,7 +9,8 @@ This project is designed to stream data from the Reddit API (posts from the subr
 ![Architecture Diagram](docs/architecture.png)
 
 
-### Workflow:
+## Workflow:
+
 1. **Kafka Producer**: Fetches new posts from `r/TodayILearned` via the Reddit API and publishes them to a Kafka topic.
 2. **Spark Streaming Consumer**: Reads messages from Kafka and writes results to PostgreSQL.
 3. **PostgreSQL Database**: Stores structured Reddit posts for further analysis.
